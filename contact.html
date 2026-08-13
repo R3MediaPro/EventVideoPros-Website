@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Get a Quote | Corporate Event Video Production | Event Video Pros</title>
+  <meta name="description" content="Request a quote for conference filming, keynote coverage, live streaming, or event recap videos. We reply within one business day.">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+
+  <link rel="canonical" href="https://eventvideopros.com/contact.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Event Video Pros">
+  <meta property="og:url" content="https://eventvideopros.com/contact.html">
+  <meta property="og:title" content="Get a Quote | Event Video Pros">
+  <meta property="og:description" content="Request a quote for conference filming, keynote coverage, live streaming, or event recap videos.">
+  <meta property="og:image" content="https://eventvideopros.com/assets/evp-logo.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Get a Quote | Event Video Pros">
+  <meta name="twitter:description" content="Request a quote for conference filming, keynote coverage, live streaming, or event recap videos.">
+  <meta name="twitter:image" content="https://eventvideopros.com/assets/evp-logo.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap nav">
+    <a class="brand" href="index.html"><img src="assets/evp-mark.png" alt="Event Video Pros"><span class="brand-text">Event Video <strong>Pros</strong></span></a>
+    <button class="menu-toggle" aria-label="Menu" onclick="document.querySelector('nav.links').classList.toggle('open')">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="links">
+      <a href="index.html">Home</a>
+      <a href="services.html">Services</a>
+      <a href="work.html">Our Work</a>
+      <a href="about.html">About</a>
+      <a href="contact.html" class="btn sm">Get a Quote</a>
+    </nav>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="wrap">
+    <h1>Tell us about your event</h1>
+    <p>Share your dates and agenda and we'll come back with a coverage plan and a clear quote - usually within one business day. Or email <a href="mailto:rob@r3mediapro.com">rob@r3mediapro.com</a> directly.</p>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap" style="max-width:800px;">
+    <!-- Formspree endpoint shared with R3; submissions arrive at rob@r3mediapro.com.
+         The hidden "brand" field marks which site the lead came from. -->
+    <form class="quote" action="https://formspree.io/f/meeyyjpn" method="POST">
+      <input type="hidden" name="brand" value="Event Video Pros">
+      <div>
+        <label for="name">Your Name</label>
+        <input type="text" id="name" name="name" required>
+      </div>
+      <div>
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+      <div>
+        <label for="company">Company / Organization</label>
+        <input type="text" id="company" name="company">
+      </div>
+      <div>
+        <label for="date">Event Date(s)</label>
+        <input type="text" id="date" name="event_date" placeholder="e.g. March 12-14, 2027">
+      </div>
+      <div>
+        <label for="type">What You Need</label>
+        <select id="type" name="service">
+          <option>Conference / Keynote Coverage</option>
+          <option>Live Streaming or Hybrid Event</option>
+          <option>Multi-Room / Multi-Day Event</option>
+          <option>Recap or Highlight Reel</option>
+          <option>Post-Production Only (I have footage)</option>
+          <option>Not sure yet</option>
+        </select>
+      </div>
+      <div>
+        <label for="location">Event Location</label>
+        <input type="text" id="location" name="location" placeholder="City, venue, or virtual">
+      </div>
+      <div class="full">
+        <label for="details">Tell us about the event</label>
+        <textarea id="details" name="details" placeholder="How many sessions or rooms? How many attendees? What are the videos for - recap, sponsors, on-demand library?"></textarea>
+      </div>
+      <div class="full">
+        <button type="submit" class="btn" style="border:0; cursor:pointer; font-size:1rem; width:100%;">Send Request</button>
+      </div>
+    </form>
+    <p id="form-error" style="display:none; color:#c0392b; margin-top:16px; text-align:center;">Something went wrong sending your request. Please try again, or email <a href="mailto:rob@r3mediapro.com">rob@r3mediapro.com</a>.</p>
+  </div>
+</section>
+
+<script>
+document.querySelector('form.quote').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const btn = this.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  try {
+    const res = await fetch(this.action, {
+      method: 'POST',
+      body: new FormData(this),
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!res.ok) throw new Error('submit failed');
+    window.location.href = 'index.html?sent=1';
+  } catch (err) {
+    document.getElementById('form-error').style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Send Request';
+  }
+});
+</script>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <a class="brand" href="index.html"><img src="assets/evp-wordmark.png" alt="Event Video Pros"></a>
+        <p class="tag">Corporate event video production and live streaming for conferences, keynotes, and summits nationwide.</p>
+      </div>
+      <div>
+        <h4>Site</h4>
+        <ul>
+          <li><a href="services.html">Services</a></li>
+          <li><a href="work.html">Our Work</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="contact.html">Contact</a></li>
+          <li><a href="https://r3mediapro.com/portal/">Client Portal</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="mailto:rob@r3mediapro.com">rob@r3mediapro.com</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2026 Event Video Pros, a division of R3 Media Production.</span>
+      <span>eventvideopros.com</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

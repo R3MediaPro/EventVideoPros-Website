@@ -1,0 +1,10 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "evp-site",
+      "url": "http://localhost:8421",
+      "port": 8421
+    }
+  ]
+}

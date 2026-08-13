@@ -1,0 +1,5 @@
+# eventvideopros.com
+User-agent: *
+Allow: /
+
+Sitemap: https://eventvideopros.com/sitemap.xml
