@@ -266,3 +266,20 @@ footer ul a:hover { color: var(--slate); }
   .travel-map .labels text { font-size: 17px; }
   .travel-map .home-label { font-size: 16px; }
 }
+
+/* ---------- FAQ ---------- */
+details.faq {
+  background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  padding: 0; margin-bottom: 12px; overflow: hidden;
+}
+details.faq summary {
+  cursor: pointer; list-style: none; padding: 18px 22px;
+  font-weight: 700; color: var(--ink); position: relative; padding-right: 48px;
+}
+details.faq summary::-webkit-details-marker { display: none; }
+details.faq summary::after {
+  content: "+"; position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+  color: var(--slate); font-size: 1.3rem; font-weight: 600;
+}
+details.faq[open] summary::after { content: "\2212"; }
+details.faq p { padding: 0 22px 18px; color: var(--steel); margin: 0; }
