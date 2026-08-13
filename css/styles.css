@@ -283,3 +283,8 @@ details.faq summary::after {
 }
 details.faq[open] summary::after { content: "\2212"; }
 details.faq p { padding: 0 22px 18px; color: var(--steel); margin: 0; }
+
+/* photo fills the 16:9 panel; logos stay centred */
+.service-visual { overflow: hidden; }
+.service-visual.photo { padding: 0; }
+.service-visual.photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
