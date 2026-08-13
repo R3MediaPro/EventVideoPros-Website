@@ -52,7 +52,13 @@ use commas, colons, or two sentences. Hyphens are fine inside real compounds
 
 - Contact form posts to Formspree `meeyyjpn`, shared with the R3 site; a hidden
   `brand=Event Video Pros` field distinguishes the leads.
-- Client Portal links point at r3mediapro.com/portal/ — EVP has no portal of
-  its own.
+- EVP has its own client portal at `portal/event.html`. It is **one file
+  shared with the R3 site**, not a copy: the page skins itself from the domain
+  it is served from, light slate and gold here, dark red on r3mediapro.com.
+  The source of truth lives in the R3 website repo at `site/portal/event.html`
+  and `deploy.sh` in the Video Editing Tracker folder copies it here on every
+  deploy, so the two can never drift. Edit it there, never here.
+  Which brand a client gets is set per project in the tracker, under
+  Sync, "Delivered as", which decides the domain their link points at.
 - Domains coloradoeventvideo.com, eventvideographernearme.com and
   eventvideoservices.com are meant to 301-redirect here.

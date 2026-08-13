@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Your Event</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <script>
+  /* One portal, two brands. Which one is decided by the domain it's served
+     from, not by the data: the gate screen paints before any API call, and a
+     client should never see the wrong logo for a second. The tracker picks the
+     domain when it builds the link. ?brand= is for previewing only. */
+  (function(){
+    var q = new URLSearchParams(location.search).get('brand');
+    var evp = q ? q === 'evp' : /eventvideopros/i.test(location.hostname);
+    window.BRAND = evp
+      ? { key:'evp', name:'Event Video Pros', mark:'../assets/evp-mark.png',
+          wordmark:'../assets/evp-wordmark.png', icon:'../assets/favicon.png' }
+      : { key:'r3',  name:'R3 Media Production', mark:'../assets/r3-mark.png',
+          wordmark:'../assets/mp-text.png', icon:'../assets/favicon-r3.png' };
+    document.documentElement.className = 'brand-' + window.BRAND.key;
+    document.title = 'Your Event | ' + window.BRAND.name;
+    var ico = window.BRAND.icon;
+    document.write('<link rel="icon" type="image/png" href="' + ico + '">' +
+                   '<link rel="apple-touch-icon" href="' + ico + '">');
+  })();
+  </script>
+  <style>
+    /* The page owns its palette rather than borrowing the host site's. The two
+       stylesheets use different variable names (EVP has no --text, --muted or
+       --red-bright), so leaning on them left half the page unstyled on one of
+       the domains. Restating them here makes the portal render correctly
+       wherever it is served, and gives the EVP skin one place to change.
+       EVP is deliberately light against R3's dark: slate blue is the brand
+       colour, gold the accent. The style guide's electric blue is not used. */
+    html.brand-r3{
+      --bg:#0c0c0e; --bg-alt:#131316; --card:#1a1a1e; --line:#2a2a30;
+      --text:#f4f4f5; --muted:#9d9da6; --red:#c1121f; --red-bright:#e63946;
+      --accent:#e63946; --shade:rgba(255,255,255,.02);
+    }
+    html.brand-evp{
+      --bg:#ffffff; --bg-alt:#F8F9FA; --card:#F8F9FA; --line:#E3E6EA;
+      --text:#2E2E2E; --muted:#6C757D; --red:#3A4677; --red-bright:#4C5A99;
+      --accent:#C19A36; --shade:rgba(76,90,153,.04);
+    }
+    html.brand-evp body{ background:var(--bg); color:var(--text); }
+    /* Surfaces tuned as "a shade lighter than black" have to become a shade
+       darker than white, not stay almost invisible. */
+    html.brand-evp .vsearch,
+    html.brand-evp .up-list li{ background:var(--shade); }
+    html.brand-evp .dropbox:hover,
+    html.brand-evp .dropbox.over{ background:rgba(76,90,153,.06); }
+    html.brand-evp .thumb{ background:linear-gradient(135deg,#EEF0F7,#E3E6EA); }
+    html.brand-evp .thumb.empty{ color:#AEB4C0; }
+    html.brand-evp .gate-logo .mp{ filter:none; opacity:1; }
+    html.brand-evp .vt .note{ color:#3A4677; border-left-color:rgba(76,90,153,.45); }
+    html.brand-evp .expected{ color:#8A6D1F; border-left-color:rgba(193,154,54,.65); }
+    html.brand-evp #player-wrap{ background:#111; }
+    html.brand-evp .pactions{ background:var(--bg-alt); }
+    html.brand-evp .up-list li a{ border-bottom-color:#C3C9D2; }
+    html.brand-evp .addnote > a{ color:#6C757D; border-bottom-color:#C3C9D2; }
+    html.brand-evp .kicker{ color:var(--accent); }
+    /* The empty part of the bar was a dark fill, which on white read as though
+       the bar were full and black. */
+    html.brand-evp .prog-bar{ background:#E3E6EA; }
+    /* One-piece lockup, so it is sized directly rather than as mark + wordmark */
+    html.brand-evp .site-header .brand img.evp-lock{ height:26px; width:auto; max-width:none; }
+    html.brand-evp .gate-logo img.evp-lock{ height:40px; width:auto; }
+    @media (max-width:620px){
+      html.brand-evp .site-header .brand img.evp-lock{ height:21px; }
+      html.brand-evp .gate-logo img.evp-lock{ height:32px; }
+    }
+
+    .badge{
+      display:inline-block; padding:5px 12px; border-radius:20px; font-size:.72rem;
+      font-weight:700; letter-spacing:.04em; white-space:nowrap; vertical-align:middle;
+    }
+    /* thumbnail + text, side by side */
+    .vrow{ display:flex; gap:14px; align-items:flex-start; }
+    .thumb{
+      flex:none; align-self:flex-start;
+      width:168px; aspect-ratio:16/9; border-radius:5px; overflow:hidden;
+      background:linear-gradient(135deg,#1c1c21,#26262c); border:1px solid var(--line);
+      position:relative; cursor:pointer;
+    }
+    /* Browsers without aspect-ratio would leave the box height to the flex
+       row, and a box that isn't 16:9 makes object-fit crop into the middle
+       of the frame. Pin a height for them. */
+    @supports not (aspect-ratio: 16 / 9){
+      .thumb{ height:95px; }
+    }
+    /* No object-fit anywhere in this. A centred image bounded by max-width
+       and max-height cannot be cropped by any browser, however old, and
+       needs no aspect-ratio support to behave. object-fit was the only
+       thing that could ever zoom into a frame, so it's gone. */
+    .thumb{ display:flex; align-items:center; justify-content:center; }
+    .thumb img{
+      max-width:100%; max-height:100%; width:auto; height:auto;
+      display:block; margin:auto;
+    }
+    .thumb .play{
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      background:rgba(0,0,0,.28); opacity:0; transition:opacity .18s; font-size:1.3rem;
+    }
+    .thumb:hover .play{ opacity:1; }
+    .thumb.empty{ display:flex; align-items:center; justify-content:center; cursor:default;
+                  color:#3f3f48; font-size:1.4rem; }
+    .vmeta{ min-width:0; flex:1; }
+    .vt .t{ line-height:1.34; }
+    .vt .d{ display:flex; flex-wrap:wrap; align-items:center; gap:5px 9px; margin-top:5px; }
+    .badge.status{ font-size:.68rem; padding:3px 10px; flex:none; }
+.prepping{ opacity:.5; cursor:default; border-style:dashed; }
+.vsearch{
+  display:flex; align-items:center; gap:9px; margin:30px 0 20px;
+  padding:9px 14px; border:1px solid var(--line); border-radius:9px;
+  background:rgba(255,255,255,.02); max-width:520px;
+}
+.vsearch:focus-within{ border-color:var(--red-bright); }
+.vsearch .ico{ opacity:.5; font-size:.9rem; flex:none; }
+.vsearch input{
+  flex:1; min-width:0; background:none; border:0; outline:none;
+  color:var(--text); font:inherit; font-size:.94rem; padding:2px 0;
+}
+.vsearch input::-webkit-search-cancel-button{ display:none; }
+.vsearch .clr{
+  flex:none; background:none; border:0; cursor:pointer; color:var(--muted);
+  font-size:1.15rem; line-height:1; padding:0 2px;
+}
+.vsearch .clr:hover{ color:var(--text); }
+.vsearch .hits{ flex:none; font-size:.78rem; color:var(--muted); white-space:nowrap; }
+.vsearch-none{ color:var(--muted); font-size:.94rem; padding:6px 0 2px; }
+.vbadge{
+  font-size:.68rem; padding:3px 10px; flex:none; margin-left:6px;
+  color:#c8a2ff; border:1px solid rgba(139,92,246,.45); background:rgba(139,92,246,.14);
+}
+.older{ margin-top:8px; display:flex; flex-direction:column; align-items:flex-start; gap:5px; }
+.older .olabel{
+  font-size:.68rem; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--muted); opacity:.75; margin:0 0 1px;   /* heading, not a first chip */
+}
+.ocut{ display:flex; align-items:center; gap:6px; }
+.vchip{
+  display:inline-flex; align-items:center; gap:4px;
+  padding:2px 9px; border-radius:20px; border:1px solid var(--line);
+  font-size:.72rem; font-weight:700; letter-spacing:.02em;
+  color:var(--muted) !important; text-decoration:none; white-space:nowrap;
+  transition:border-color .15s, color .15s, background .15s;
+}
+.vchip:hover{ border-color:var(--red-bright); color:var(--text) !important; background:rgba(224,49,49,.06); }
+.dropbox{
+  border:2px dashed var(--line); border-radius:10px; padding:30px 20px; text-align:center;
+  color:var(--muted); transition:border-color .15s, background .15s; cursor:pointer;
+}
+.dropbox:hover, .dropbox.over{ border-color:var(--red-bright); background:rgba(224,49,49,.05); color:var(--text); }
+.dropbox-in{ display:flex; flex-direction:column; align-items:center; gap:8px; font-size:.94rem; }
+.linkish{
+  background:none; border:0; padding:0; font:inherit; color:var(--red-bright);
+  text-decoration:underline; cursor:pointer;
+}
+.up-list{ list-style:none; padding:0; margin:16px 0 0; display:flex; flex-direction:column; gap:7px; }
+.up-sent{ margin-top:22px; }
+.up-sent-h{
+  display:flex; align-items:center; gap:10px; margin-bottom:9px;
+  font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-weight:700;
+}
+.up-sent-h .linkish{ font-size:.72rem; letter-spacing:0; text-transform:none; font-weight:600; }
+.up-rm{
+  flex:none; background:none; border:1px solid var(--line); border-radius:20px;
+  color:var(--muted); font-size:.7rem; padding:2px 10px; cursor:pointer;
+}
+.up-rm:hover{ border-color:#e63946; color:#e63946; }
+.up-when{ flex:none; font-size:.76rem; color:var(--muted); }
+.up-list li a{ color:var(--text) !important; border-bottom:1px dotted #45454f; }
+.up-list li{
+  display:flex; align-items:center; gap:10px; font-size:.88rem;
+  padding:8px 12px; border:1px solid var(--line); border-radius:7px; background:rgba(255,255,255,.02);
+}
+.up-list .nm{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.up-list .st{ flex:none; font-size:.8rem; color:var(--muted); }
+.up-list .st.ok{ color:#7fd6a8; }
+.up-list .st.bad{ color:#e63946; }
+    .addnote{ margin-top:7px; }
+    .addnote > a{
+      font-size:.76rem; color:#6f6f79; border-bottom:1px dotted #45454f; padding-bottom:1px;
+    }
+    .addnote > a:hover{ color:var(--red-bright); border-bottom-color:var(--red-bright); }
+    .addnote textarea{
+      width:100%; max-width:56ch; margin-top:8px; padding:9px 11px; border-radius:5px;
+      background:var(--bg); border:1px solid var(--line); color:var(--text);
+      font-family:inherit; font-size:.88rem; resize:vertical;
+    }
+    .addnote textarea:focus{ outline:none; border-color:var(--red-bright); }
+    .addnote .row{ display:flex; align-items:center; gap:8px; margin-top:7px; }
+    .addnote .stat{ font-size:.8rem; color:var(--muted); }
+    .vt .note{
+      margin-top:7px; font-size:.86rem; color:#bcd4f7; line-height:1.45;
+      border-left:2px solid rgba(61,139,253,.55); padding-left:10px; max-width:64ch;
+    }
+    @media (max-width:620px){
+      .thumb{ width:128px; }
+      .vt-wrap{ overflow-x:visible; }
+      table.vt{ min-width:0; }
+      table.vt tr{ display:block; border-bottom:1px solid var(--line); padding:10px 0; }
+      table.vt tr:last-child{ border-bottom:0; }
+      table.vt td{ display:block; border-bottom:0; padding:10px 0; }
+      table.vt td.btns{ width:auto; text-align:left; white-space:normal; padding-top:0; }
+    }
+    /* The brand is flex:0 1 auto from the site stylesheet, so it shrinks while
+   the logo images inside it don't — they spill out and end up under the
+   header tools. Pin the brand and let the tools give way instead. */
+.site-header .brand{ flex:0 0 auto; }
+.site-header .brand img{ max-width:100%; }
+.portal-tools{
+  display:flex; align-items:center; gap:16px;
+  flex:0 1 auto; min-width:0; margin-left:20px;
+}
+/* three lines of "Updated 12:16 PM" is what made the collision obvious */
+.hdr-live, .hdr-live span{ white-space:nowrap; }
+    .hdr-live{ display:inline-flex; align-items:center; gap:7px; font-size:.78rem; color:var(--muted); }
+    .hdr-live i{ width:7px; height:7px; border-radius:50%; background:#2ea86a; display:block; flex:none; }
+    .hdr-count{ font-size:.78rem; color:var(--muted); white-space:nowrap; }
+    .hdr-count b{ color:var(--text); font-weight:700; }
+    .hdr-count.just-changed{ animation:pop 1.6s ease-out 2; }
+    @keyframes pop{
+      0%   { color:var(--muted); }
+      15%  { color:#7fd6a8; }
+      100% { color:var(--muted); }
+    }
+    .new-note{
+      font-size:.8rem; font-weight:700; color:#7fd6a8;
+      background:rgba(46,168,106,.12); border:1px solid rgba(46,168,106,.4);
+      border-radius:20px; padding:4px 12px;
+    }
+    .hdr-jump{
+      background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:5px;
+      padding:6px 10px; font-size:.8rem; font-family:inherit; max-width:190px; cursor:pointer;
+    }
+    .hdr-jump:focus{ outline:none; border-color:var(--red-bright); }
+    .hdr-link{ font-size:.82rem; color:var(--muted) !important; font-weight:600; }
+    .hdr-link:hover{ color:var(--text) !important; }
+    .hdr-refresh{ cursor:pointer; white-space:nowrap; }
+    .hdr-refresh[disabled]{ opacity:.5; cursor:default; }
+    /* Thresholds measured rather than guessed. Widths at 1400px: brand 354
+       (mark alone 113), clock 122, count 70, jump 139, contact 60, refresh
+       111, 16px gaps, 48px wrap padding — plus 24px so nothing is ever
+       shoulder to shoulder. Each item leaves at the width where keeping it
+       would start the squeeze, and not a pixel earlier. */
+    @media (max-width:1010px){ .hdr-count{ display:none; } }
+    @media (max-width:925px){ .hdr-link{ display:none; } }
+    @media (max-width:850px){ .hdr-live{ display:none; } }
+    @media (max-width:710px){
+      .hdr-jump{ display:none; }
+      .portal-tools{ gap:10px; }
+    }
+    @media (max-width:556px){ .site-header .brand .mp-text{ display:none; } }
+
+    /* The gate is one heading, one chip and one field, but desktop spacing
+       stretched it over a full screen and a half — 101px of nothing between
+       the access code and the password box, and a wordmark pulled to the
+       full content width. Tighten it so the field is reachable without a
+       scroll. */
+    @media (max-width:620px){
+      /* The CLIENT PORTAL label is the site nav's mobile panel — absolutely
+         positioned, ~70px tall, painting over whatever follows the header.
+         The hero has to clear it, so the top padding stays generous; the
+         savings come from everywhere below. */
+      #gate .page-hero{ padding-top:96px; padding-bottom:24px; }
+      #gate .block{ padding:22px 0 52px !important; }
+      .gate-logo{ margin-bottom:14px; }
+      .gate-logo img{ max-width:148px; }
+      .gate-logo img.mp{ max-width:224px; }
+      #gate h1{ font-size:1.45rem; line-height:1.25; }
+      #gate .page-hero p{ margin-top:10px; font-size:.94rem; }
+      .gate-code{ margin-top:14px; padding:7px 12px; gap:8px; }
+      .gate-code code{ font-size:.82rem; }
+    }
+    /* The site's nav collapses into a dropdown panel below 800px. These are
+       controls, not links — keep them inline in the bar. */
+    @media (max-width:800px){
+      .portal-tools{
+        position:static !important; flex-direction:row !important; background:none !important;
+        padding:0 !important; border:0 !important; gap:10px !important; width:auto !important;
+      }
+    }
+    @supports not (aspect-ratio: 16 / 9){
+      @media (max-width:620px){ .thumb{ height:72px; } }
+    }
+
+    .prog{ margin-top:24px; max-width:520px; }
+    .prog-bar{ height:8px; border-radius:5px; background:#232329; overflow:hidden; display:flex; }
+    .prog-bar i{
+      display:block; height:100%; width:0; transition:width .7s ease;
+      background:linear-gradient(90deg,#2ea86a,#4fd18c);
+    }
+    /* new versions underway: the work exists (v1 is watchable) but the
+       current cut isn't done — amber, matching the tracker's editing colour */
+    .prog-bar i.upd{ background:linear-gradient(90deg,#b06a1e,#d98324); }
+    .prog-txt{ margin-top:9px; font-size:.84rem; color:var(--muted); }
+    .prog-txt b{ color:var(--text); font-weight:700; }
+    .prog-eta{
+      margin-top:10px; font-size:.92rem; font-weight:600; color:var(--text);
+      border-left:2px solid var(--red); padding-left:11px;
+    }
+    .expected{
+      display:inline-block; font-size:.78rem; color:#c8b48a; margin-top:6px;
+      border-left:2px solid rgba(217,131,36,.55); padding-left:9px;
+    }
+    .live{ display:inline-flex; align-items:center; gap:7px; font-size:.78rem; color:var(--muted); }
+    .live i{ width:7px; height:7px; border-radius:50%; background:#2ea86a; display:block; }
+    .muted{ color:var(--muted); }
+    .gate-code{
+  display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;
+  margin:18px auto 0;padding:8px 14px;border-radius:20px;
+  border:1px solid var(--line);background:rgba(255,255,255,.03);
+}
+.gate-code .k{
+  font-size:.64rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:700;
+}
+.gate-code code{ font-size:.86rem; color:var(--text); }
+.gate-code .ok{ font-size:.74rem; color:#7fd6a8; }
+.gate-logo{ display:flex; flex-direction:column; align-items:center; gap:9px; margin-bottom:24px; }
+    .gate-logo img{ height:56px; width:auto; }
+    .gate-logo .mp{ height:13px; filter:invert(1) brightness(1.6); opacity:.92; }
+    .btn.sm.ghost{ background:transparent; border:1px solid var(--line); color:var(--text) !important; }
+    .btn.sm.ghost:hover{ border-color:var(--red-bright); }
+
+    /* One slot per action, always the same width, so the buttons line up
+       down the page whether or not a given row has that action. */
+    .vt td.btns{ width:1%; }
+    .actions{ display:grid; grid-template-columns:100px 172px 94px 130px 74px; gap:8px; align-items:center; }
+    .actions > *{ min-width:0; }
+    .actions .btn.sm{ display:flex; align-items:center; justify-content:center; gap:5px;
+                      margin-left:0; padding:8px 10px; text-align:center; }
+    .actions .badge{ display:flex; align-items:center; justify-content:center; padding:7px 6px; }
+    .actions .empty-slot{ height:1px; }
+    @media (max-width:1140px){
+      .actions{ display:flex; flex-wrap:wrap; gap:8px; }
+      .actions .empty-slot{ display:none; }
+      .actions .btn.sm{ flex:0 0 auto; padding:8px 14px; }
+    }
+    /* The same actions, repeated under the player. Sized a step up from the
+       row buttons and hung off the bottom edge of the frame, so it reads as
+       part of the viewer rather than as a second list. */
+    .pactions{
+      display:flex; flex-wrap:wrap; gap:9px; align-items:center;
+      margin-top:-1px; padding:13px 15px;
+      border:1px solid var(--line); border-top:0; border-radius:0 0 8px 8px;
+      background:rgba(255,255,255,.028);
+    }
+    .pactions .actions{ display:flex; flex-wrap:wrap; gap:9px; }
+    .pactions .btn.sm{ padding:9px 16px; font-size:.86rem; }
+    @media (max-width:620px){
+      .pactions{ padding:11px 12px; gap:7px; }
+      .pactions .btn.sm{ flex:1 1 auto; justify-content:center; }
+    }
+    #player-wrap{ aspect-ratio:16/9; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:#000; }
+    #player-wrap.has-actions{ border-radius:8px 8px 0 0; }
+    #player-wrap .placeholder{
+      width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+      flex-direction:column; gap:10px; color:var(--muted); font-size:.9rem;
+      background:radial-gradient(ellipse 60% 60% at 50% 40%, rgba(193,18,31,.16), transparent 65%), #0f0f12;
+    }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap nav">
+    <a class="brand" href="../index.html" id="brand-lockup"></a>
+    <nav class="links portal-tools" id="portal-tools" style="display:none;">
+      <span class="hdr-live" id="hdr-live" title="This page updates itself as videos are finished">
+        <i id="dot2"></i><span id="hdr-updated">Live</span>
+      </span>
+      <span class="hdr-count" id="hdr-count"></span>
+      <select class="hdr-jump" id="hdr-jump" onchange="jumpTo(this.value)" title="Jump to a section">
+        <option value="">Jump to&hellip;</option>
+      </select>
+      <a class="hdr-link" href="mailto:rob@r3mediapro.com?subject=Question%20about%20our%20videos">Contact</a>
+      <button class="btn sm ghost hdr-refresh" id="hdr-refresh" onclick="refresh(true)" title="Check for new videos">
+        &#8635;&nbsp; Refresh</button>
+    </nav>
+    <nav class="links" id="portal-label" style="display:flex;">
+      <span style="color:var(--muted); font-size:0.85rem; letter-spacing:0.12em; text-transform:uppercase; font-weight:700;">Client Portal</span>
+    </nav>
+  </div>
+</header>
+
+<!-- ---------- password gate ---------- -->
+<section id="gate">
+  <div class="page-hero"><div class="wrap" style="text-align:center;">
+    <div class="gate-logo" id="gate-lockup"></div>
+    <h1 style="font-size:clamp(1.6rem,3.5vw,2.2rem);">This page is password protected</h1>
+    <p style="margin:12px auto 0; max-width:46ch;">Your access code is already in this link. Enter the
+    <b>password</b> from your delivery email to see your videos.</p>
+    <div id="gate-code" class="gate-code" style="display:none">
+      <span class="k">Access code</span>
+      <code id="gate-code-v"></code>
+      <span class="ok">&#10003; already applied</span>
+    </div>
+  </div></div>
+  <div class="block" style="padding:50px 0 80px;">
+    <div class="wrap" style="max-width:420px;">
+      <form class="quote" style="grid-template-columns:1fr;" onsubmit="event.preventDefault(); unlock();">
+        <div>
+          <label for="pw">Password</label>
+          <input type="password" id="pw" autocomplete="current-password" required>
+        </div>
+        <div>
+          <button id="unlock-btn" type="submit" class="btn" style="border:0; cursor:pointer; font-size:1rem; width:100%;">Unlock</button>
+        </div>
+        <p id="err" style="display:none; color:#e63946; margin:0; text-align:center; font-size:0.9rem;"></p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- the board ---------- -->
+<section id="board" style="display:none;">
+  <div class="page-hero"><div class="wrap">
+    <div id="ev-client" style="color:var(--red-bright); font-weight:700; letter-spacing:0.22em;
+         text-transform:uppercase; font-size:0.75rem; margin-bottom:10px; display:none;"></div>
+    <h1 id="ev-name">Your Event</h1>
+    <p id="ev-welcome"></p>
+    <div class="prog" id="prog" style="display:none">
+      <div class="prog-bar"><i id="prog-fill"></i><i id="prog-fill-upd" class="upd"></i></div>
+      <div class="prog-txt" id="prog-txt"></div>
+      <div class="prog-eta" id="prog-eta" style="display:none"></div>
+    </div>
+  </div></div>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="section-head" style="margin-bottom:24px;">
+        <div class="kicker">Now Playing</div>
+        <h2 id="now-playing">Choose a video below</h2>
+      </div>
+      <div id="player-wrap">
+        <div class="placeholder" id="player-placeholder">
+          <div style="font-size:2rem;">&#127916;</div>
+          <div>Pick any video below to play it here</div>
+        </div>
+      </div>
+      <div id="player-actions" class="pactions" style="display:none"></div>
+
+      <div class="vsearch" id="vsearch" style="display:none">
+        <span class="ico">&#128269;</span>
+        <input id="vq" type="search" autocomplete="off" placeholder="Search sessions&hellip;"
+               aria-label="Search sessions" oninput="onSearch()">
+        <button type="button" id="vq-clear" class="clr" onclick="clearSearch()"
+                aria-label="Clear search" style="display:none">&times;</button>
+        <span class="hits" id="vq-hits"></span>
+      </div>
+
+      <div id="sections"></div>
+
+      <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-top:30px;">
+        <span class="live"><i id="dot"></i> <span id="live-txt">Live</span></span>
+        <span class="muted" id="buildstamp" style="font-size:.72rem;opacity:.55" title="Which build of this page you're looking at">build Aug 12, 8:05 PM MT</span>
+        <span id="ev-sum" class="muted" style="font-size:.85rem;"></span>
+        <span id="new-note" class="new-note" style="display:none"></span>
+      </div>
+
+      <p style="color:var(--red-bright); font-size:0.9rem; margin-top:26px; font-weight:600;">
+        &#9888; Please download your files and store them on your own drive or server.
+        Uploaded files are guaranteed available for 1 year from delivery.
+      </p>
+      <p class="muted" style="font-size:0.85rem; margin-top:8px;">
+        Need a different format or aspect ratio? Just ask &mdash;
+        <a href="mailto:rob@r3mediapro.com">rob@r3mediapro.com</a>.
+      </p>
+    </div>
+  </section>
+
+  <section class="block" id="upload-block" style="display:none;">
+    <div class="wrap">
+      <div class="section-head" style="margin-bottom:18px;">
+        <div class="kicker">Send Us Files</div>
+        <h2>Brand guidelines, logos, notes</h2>
+      </div>
+      <p class="muted" style="font-size:.92rem; margin:0 0 16px; max-width:60ch;">
+        Anything you drop here goes straight to our production folder for this event.
+        No account needed. <span id="up-cap"></span>
+      </p>
+      <div id="dropbox" class="dropbox">
+        <input type="file" id="up-input" multiple style="display:none">
+        <div class="dropbox-in">
+          <div style="font-size:1.6rem; line-height:1;">&#8681;</div>
+          <div><b>Drop files here</b> or <button type="button" class="linkish" id="up-browse">browse</button></div>
+        </div>
+      </div>
+      <ul id="up-list" class="up-list"></ul>
+      <div id="up-sent" class="up-sent" style="display:none">
+        <div class="up-sent-h"><span id="up-sent-n"></span>
+          <button type="button" class="linkish" id="up-refresh" onclick="loadUploads()">Refresh</button></div>
+        <ul id="up-sent-list" class="up-list"></ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="block alt" id="details-block" style="display:none;">
+    <div class="wrap">
+      <div class="section-head" style="margin-bottom:18px;">
+        <div class="kicker">Project Summary</div>
+        <h2>Event Details</h2>
+      </div>
+      <ul class="checks" id="ev-details"></ul>
+    </div>
+  </section>
+
+  <section class="cta-band">
+    <div class="wrap">
+      <h2 id="cta-h">Planning your next event?</h2>
+      <p id="cta-p">We'd love to do it again. Lock in your date and we'll carry everything over &mdash;
+         shot lists, branding, and lessons learned.</p>
+      <a class="btn" id="cta-a" href="../contact.html">Book Your Next Event</a>
+    </div>
+  </section>
+</section>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-bottom" style="margin-top:0; padding-top:0; border-top:0;">
+      <span>&copy; 2026 <span id="foot-brand">R3 Media Production</span> &middot; This page is private. Please don't share the link publicly.</span>
+      <span><a href="mailto:rob@r3mediapro.com">rob@r3mediapro.com</a></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* -------------------------------------------------------------------------
+   Reads the same Google Sheet the editing tracker writes to, so a status
+   change, a new video or a new link shows up here on the next load.
+   Set API to the Apps Script /exec URL.
+   ------------------------------------------------------------------------- */
+const API = 'https://script.google.com/macros/s/AKfycbxcQZAx8leuJsUp4f-qkTcsfenXeLrZean7xxJKQjGaNiNuBcOt0vz1QPyemnrNAaL9/exec';
+
+const COLOURS = {
+  notstarted:'#6b6b74', editing:'#d98324', exported:'#3d8bfd',
+  uploaded:'#8b5cf6', delivered:'#2ea86a', issue:'#e63946',
+  undeliverable:'#7a6552'
+};
+
+// The board is empty until the fetch returns, so a browser-restored scroll
+// offset lands you below everything. Take the wheel and start at the top.
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+const params = new URLSearchParams(location.search);
+const EVENT = (params.get('event') || '').toLowerCase();
+const DEBUG = params.get('debug') === '1';
+let password = sessionStorage.getItem('r3-pw-' + EVENT) || '';
+let timer = null;
+let lastFetch = 0;
+let lastDelivered = null;
+
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* An inline handler is HTML-decoded before it's compiled as JavaScript, so
+   esc()'s &#39; turns back into a quote that closes the string it sits in.
+   Anything dropped into an onclick JS string gets escaped as JS first. */
+const jsq = s => esc(String(s == null ? '' : s).replace(/[\\'"\r\n]/g, c =>
+  ({'\\':'\\\\', "'":"\\'", '"':'\\"', '\r':'', '\n':''}[c])));
+
+/* Only ever link somewhere a browser should follow. A javascript: or data:
+   URL reaching an href is a script the page didn't write. */
+const safeUrl = u => /^(https?:|mailto:)/i.test(String(u || '').trim()) ? String(u).trim() : '';
+
+function timeHuman(hhmm){
+  if (!hhmm) return '';
+  const [h, m] = String(hhmm).split(':').map(Number);
+  if (isNaN(h)) return String(hhmm);
+  const ap = h >= 12 ? 'PM' : 'AM';
+  return (h % 12 === 0 ? 12 : h % 12) + ':' + String(m || 0).padStart(2, '0') + ' ' + ap;
+}
+function dur(sec){
+  if (!sec) return '';
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return m >= 60 ? `${Math.floor(m/60)}:${String(m%60).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+                 : `${m}:${String(s).padStart(2,'0')}`;
+}
+function size(bytes){
+  if (!bytes) return '';
+  const gb = bytes / 1073741824;
+  if (gb >= 1) return gb.toFixed(1) + ' GB';
+  // client uploads are often a few hundred KB, which rounded to "0 MB"
+  const mb = bytes / 1048576;
+  if (mb >= 1) return Math.round(mb) + ' MB';
+  return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+}
+// "2026-08-14" -> "Thu 14 Aug". Parsed as a plain date, not UTC, so it can't
+// slip a day depending on the reader's timezone.
+/**
+ * A date that has already gone by. Compared as plain YYYY-MM-DD strings
+ * against the viewer's own today — parsing '2026-08-10' as a Date makes it
+ * UTC midnight, which reads as yesterday for anyone west of Greenwich.
+ * The date itself is not past until the day after.
+ */
+function isPastDate(ymd){
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(ymd || ''))) return false;
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  return ymd < d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+
+function niceDate(ymd){
+  const m = String(ymd || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return ymd || '';
+  const d = new Date(+m[1], +m[2] - 1, +m[3]);
+  if (isNaN(d)) return ymd;
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${days[d.getDay()]} ${d.getDate()} ${mons[d.getMonth()]}`;
+}
+
+function roomLabel(code, name){
+  if (name) return name;
+  if (!code) return '';
+  let m;
+  if ((m = code.match(/^BO(\d+)$/i)))  return 'Breakout ' + m[1];
+  if ((m = code.match(/^TR(.+)$/i)))   return 'Track ' + m[1];
+  if ((m = code.match(/^RM(.+)$/i)))   return 'Room ' + m[1];
+  if (code.toUpperCase() === 'MAIN')   return 'Main Stage';
+  if (code.toUpperCase() === 'GS')     return 'General Session';
+  if (code.toUpperCase() === 'KEY')    return 'Keynote Hall';
+  m = code.match(/^([A-Za-z]{2,})(\d[\d+&-]*)$/);
+  if (m) return m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase() + ' ' + m[2];
+  return code;
+}
+
+/* POST keeps the client's password out of browser history, Apps Script's
+   execution log and any proxy in between — but /exec answers POST through a
+   redirect hop that has proved unreliable (404s and 50s hangs while plain GET
+   answered in 8s). So POST is preferred, not depended on: one failure and this
+   session falls back to GET and stays there. A client seeing their videos
+   beats tidy logs. */
+let boardPost = true;
+
+async function boardVia(method, ms){
+  const ctl = new AbortController();
+  // A timeout so a hung connection doesn't strand the page on "Checking…" —
+  // but generous, because Apps Script legitimately takes tens of seconds.
+  const bell = setTimeout(() => ctl.abort(), ms);
+  let res;
+  try {
+    res = method === 'POST'
+      ? await fetch(API, { method:'POST', redirect:'follow', signal: ctl.signal,
+                           headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+                           body: JSON.stringify({ mode:'portal', event: EVENT, pw: password }) })
+      : await fetch(API + '?mode=portal&event=' + encodeURIComponent(EVENT) +
+                    '&pw=' + encodeURIComponent(password),
+                    { redirect:'follow', signal: ctl.signal });
+  } catch (e){
+    throw new Error(e.name === 'AbortError'
+      ? 'The server took too long to answer. Showing the last update.'
+      : 'Could not reach the server. Check your internet connection.');
+  } finally { clearTimeout(bell); }
+  if (!res.ok) throw new Error('The server returned an error (' + res.status + ').');
+  const text = await res.text();
+  try { return JSON.parse(text); }
+  catch (e){
+    // Apps Script hands back its own HTML error page often enough that this
+    // has to be treated as a transport failure, not as data.
+    throw new Error('The server answered with a page instead of data.');
+  }
+}
+
+async function fetchBoard(){
+  if (!API || API.indexOf('PASTE_YOUR') === 0){
+    throw new Error('This page hasn’t been connected to the tracker yet (setup step 4). ' +
+                    'Contact rob@r3mediapro.com.');
+  }
+  lastFetch = Date.now();
+  if (boardPost){
+    try { return await boardVia('POST', 20000); }
+    catch (e){ boardPost = false; }        // don't pay for it again this visit
+  }
+  return boardVia('GET', 60000);
+}
+
+async function unlock(){
+  const btn = document.getElementById('unlock-btn'), err = document.getElementById('err');
+  password = document.getElementById('pw').value.trim();
+  err.style.display = 'none'; btn.textContent = 'Unlocking…';
+  try {
+    const data = await fetchBoard();
+    if (!data.ok) throw new Error(data.error === 'bad password'
+      ? 'That password didn’t match. Check your delivery email, or contact rob@r3mediapro.com.'
+      : 'We couldn’t find that event. Check the link in your delivery email.');
+    sessionStorage.setItem('r3-pw-' + EVENT, password);
+    showBoard(data);
+  } catch (e){
+    err.textContent = e.message; err.style.display = 'block';
+    btn.textContent = 'Unlock';
+  }
+}
+
+function showBoard(data){
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('board').style.display = 'block';
+  wireUploads();
+  // arriving at the page, not a background poll — start where the client expects
+  window.scrollTo(0, 0);
+  render(data);
+  startPolling();
+}
+
+// Poll only while the page is actually being looked at, and check straight
+// away when someone comes back to the tab rather than making them wait out
+// the rest of a minute.
+function startPolling(){
+  clearInterval(timer);
+  timer = setInterval(() => { if (!document.hidden) refresh(false); }, 60000);
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  if (Date.now() - lastFetch > 15000) refresh(false);   // don't hammer on tab flicking
+});
+window.addEventListener('focus', () => {
+  if (Date.now() - lastFetch > 15000) refresh(false);
+});
+window.addEventListener('online', () => refresh(false));
+
+async function refresh(loud){
+  const txt = document.getElementById('live-txt');
+  const btn = document.getElementById('hdr-refresh');
+  const hdr = document.getElementById('hdr-updated');
+  if (loud){ txt.textContent = 'Checking…'; if (hdr) hdr.textContent = 'Checking…'; }
+  if (btn) btn.disabled = true;
+  let data;
+  try {
+    data = await fetchBoard();
+  } catch (e){
+    txt.textContent = e.message && /took too long/.test(e.message)
+      ? 'The server is being slow. Showing the last update.'
+      : 'Couldn’t reach the server. Showing the last update.';
+    document.getElementById('dot').style.background = '#d98324';
+    if (hdr) hdr.textContent = 'Offline';
+    document.getElementById('dot2').style.background = '#d98324';
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+  // Rendering happens outside that catch on purpose: a fault in drawing the
+  // page is not the server being unreachable, and reporting it as "Offline"
+  // sent us looking at the network for a bug that was never there.
+  if (data && data.ok) render(data);
+}
+
+let firstLoaded = false;
+/* Every playable cut by session id — primaries and older versions alike — so
+   the player can find the one it's showing and put its buttons underneath. */
+let playIndex = new Map();
+
+function loadPlayer(row, autoplay){
+  if (!row) return;
+  const q = [];
+  if (row.vimeoHash) q.push('h=' + encodeURIComponent(row.vimeoHash));   // unlisted videos need this
+  if (autoplay) q.push('autoplay=1');
+  document.getElementById('player-wrap').innerHTML =
+    '<iframe id="player" src="https://player.vimeo.com/video/' + encodeURIComponent(row.vimeoId) +
+    (q.length ? '?' + q.join('&') : '') + '" style="width:100%;height:100%;border:0;" ' +
+    'allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="Video player"></iframe>';
+  // Name the version whenever there's more than one cut to be on — playing
+  // v1 of a session that has a v2 has to say so, or you can't tell.
+  const named = (row.version || 1) > 1 || row._older;
+  document.getElementById('now-playing').textContent =
+    (row.title || 'Video') + (named ? '  \u2014  v' + (row.version || 1) : '');
+  nowPlayingId = row.id;
+  paintPlayerActions(row);
+}
+
+/** The same buttons the row carries, repeated where you're actually watching
+    — reaching the download shouldn't mean hunting back down the list. */
+function paintPlayerActions(row){
+  const box = document.getElementById('player-actions');
+  if (!box) return;
+  const html = actionsHtml(row, 'player');
+  const empty = !/<a |<span class="btn/.test(html);
+  box.innerHTML = empty ? '' : html;
+  box.style.display = empty ? 'none' : '';
+  document.getElementById('player-wrap').classList.toggle('has-actions', !empty);
+}
+
+/**
+ * Anything that sends you to Vimeo in another tab stops the embed first —
+ * otherwise you land on the review page with the same audio still running
+ * behind you. Marked with data-pause rather than wired per button, so the
+ * rows, the earlier-cut chips and the bar under the player all get it, and a
+ * download link (which doesn't take you anywhere) doesn't.
+ *
+ * Vimeo's players accept the JSON postMessage API on any player.vimeo.com
+ * embed; a player that hasn't finished loading simply ignores it.
+ */
+function pausePlayer(){
+  const f = document.getElementById('player');
+  if (!f || !f.contentWindow) return;
+  try { f.contentWindow.postMessage(JSON.stringify({ method: 'pause' }), 'https://player.vimeo.com'); }
+  catch (e){ /* nothing to pause, or the player isn't up yet */ }
+}
+document.addEventListener('click', e => {
+  const a = e.target.closest && e.target.closest('a[data-pause]');
+  if (a) pausePlayer();
+});
+
+function playVideo(id){
+  const row = playIndex.get(id);
+  if (!row) return;
+  firstLoaded = true;
+  loadPlayer(row, true);
+  scrollToPlayer();
+}
+
+// Bring the player just under the sticky header — not the heading above it,
+// and not at all if you can already see the whole thing.
+function jumpTo(id){
+  if (!id) return;
+  const el = document.getElementById(id);
+  if (!el) return;
+  const head = document.querySelector('header.site-header');
+  const gap = (head ? head.offsetHeight : 68) + 16;
+  window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - gap, behavior: 'smooth' });
+  document.getElementById('hdr-jump').value = '';
+}
+
+function scrollToPlayer(){
+  const wrap = document.getElementById('player-wrap');
+  if (!wrap) return;
+  const head = document.querySelector('header.site-header');
+  const gap = (head ? head.offsetHeight : 68) + 20;
+  const box = wrap.getBoundingClientRect();
+  const fullyVisible = box.top >= gap && box.bottom <= window.innerHeight;
+  if (fullyVisible) return;
+  window.scrollTo({ top: box.top + window.scrollY - gap, behavior: 'smooth' });
+}
+
+function openNote(id){
+  const f = document.getElementById('nf-' + id);
+  if (!f) return;
+  f.style.display = 'block';
+  f.previousElementSibling.style.display = 'none';
+  document.getElementById('nt-' + id).focus();
+}
+function closeNote(id){
+  const f = document.getElementById('nf-' + id);
+  if (!f) return;
+  f.style.display = 'none';
+  f.previousElementSibling.style.display = '';
+}
+
+let sendingNote = false;
+
+async function sendNote(id){
+  const box = document.getElementById('nt-' + id);
+  const stat = document.getElementById('ns-' + id);
+  const text = box.value.trim();
+  if (!text || sendingNote) return;
+  sendingNote = true;
+  stat.textContent = 'Sending…';
+  try {
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      redirect: 'follow',
+      body: JSON.stringify({ mode: 'note', event: EVENT, pw: password, id: id, text: text })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'could not save');
+    box.value = '';
+    stat.style.color = '#2ea86a';
+    stat.textContent = 'Sent. Thanks, Rob will see it.';
+    setTimeout(() => { closeNote(id); stat.textContent = ''; stat.style.color = ''; }, 2500);
+  } catch (e){
+    stat.style.color = '#e63946';
+    stat.textContent = 'Didn\u2019t send. Try again, or email rob@r3mediapro.com.';
+  } finally { sendingNote = false; }
+}
+
+function render(data){
+  lastData = data;                 // so a search can re-render without refetching
+  const ev = data.event || {};
+  // one fold, reused by both the counts and the section rendering below
+  const folded = foldVersions(data.sessions || []);
+  // Rebuilt every render so the player's buttons follow a status change —
+  // a download link that appears mid-session should light up where you're
+  // watching, not only in the list.
+  playIndex = new Map();
+  folded.forEach(r => {
+    if (r.vimeoId) playIndex.set(r.id, r);
+    (r.older || []).forEach(o => {
+      if (!o.vimeoId) return;
+      o._older = true;          // so the player can say which cut you're on
+      playIndex.set(o.id, o);
+    });
+  });
+  document.title = (ev.name || 'Your Event') + ' | ' + window.BRAND.name;
+  document.getElementById('ev-name').textContent = ev.name || 'Your Event';
+
+  const client = document.getElementById('ev-client');
+  client.textContent = ev.client || '';
+  client.style.display = ev.client ? 'block' : 'none';
+
+  document.getElementById('ev-welcome').textContent = ev.welcome ||
+    `All of your ${ev.isEvent === false ? 'project' : 'event'} deliverables live on this page. ` +
+    'Stream any video below, or use the download buttons to save the full-quality files. ' +
+    'This page is private to your team, so feel free to share it internally along with the password.';
+
+    // Rows marked undeliverable in the tracker keep their place and their
+  // status here, they just don't count towards the total — otherwise one
+  // session nobody can finish pins the bar below 100% forever.
+  const cantDeliver = r => r.status === 'undeliverable' || r.uncounted;
+  const onHold = folded.filter(cantDeliver);
+  const counted = folded.filter(r => !cantDeliver(r));
+
+  /**
+   * Delivered means the CURRENT cut. A session mid-re-cut used to count as
+   * delivered because its v1 still existed, which let the line say
+   * "5 delivered · 2 being re-cut" — the same two sessions counted twice,
+   * reading as ten items across eight. The three states are disjoint now:
+   * delivered, new version underway (earlier cut watchable), in production.
+   * Re-cuts get the amber bar segment, so total coloured progress never
+   * lurches backwards when a v2 starts — green just hands that share over.
+   */
+  const total = counted.length;
+  const doneNow  = counted.filter(r => r.status === 'delivered').length;
+  const updating = counted.filter(r => r.status !== 'delivered' &&
+                                       (r.older || []).some(o => o.status === 'delivered')).length;
+  // One number everywhere: the header matches the bar, and both mean the
+  // current cut is delivered. A session mid-re-cut is not "ready".
+  data = Object.assign({}, data, { total, delivered: doneNow });
+
+  document.getElementById('ev-sum').textContent =
+    total ? `${doneNow} of ${total} sessions delivered.` : '';
+
+  document.getElementById('portal-label').style.display = 'none';
+  document.getElementById('portal-tools').style.display = 'flex';
+  const prog = document.getElementById('prog');
+  if (data.total){
+    prog.style.display = '';
+    document.getElementById('prog-fill').style.width = Math.round(doneNow / total * 100) + '%';
+    document.getElementById('prog-fill-upd').style.width = Math.round(updating / total * 100) + '%';
+    const left = total - doneNow - updating;
+    document.getElementById('prog-txt').innerHTML =
+      `<b>${doneNow}</b> of <b>${total}</b> delivered` +
+      (updating ? ` &middot; ${updating} new version${updating === 1 ? '' : 's'} underway` : '') +
+      (left ? ` &middot; ${left} still in production` : (!updating ? ' &mdash; all done' : '')) +
+      (onHold.length ? ` &middot; ${onHold.length} undeliverable` : '');
+  } else prog.style.display = 'none';
+
+  const etaEl = document.getElementById('prog-eta');
+  const eta = (ev.eta || '').trim();
+  // once everything's delivered the promise is history — don't keep flashing it
+  const allDone = data.total && doneNow >= data.total;
+  etaEl.textContent = eta;
+  etaEl.style.display = (eta && !allDone) ? '' : 'none';
+
+  const countEl = document.getElementById('hdr-count');
+  countEl.innerHTML = data.total ? `<b>${data.delivered}</b> of <b>${data.total}</b> ready` : '';
+  if (lastDelivered !== null && data.delivered > lastDelivered){
+    const added = data.delivered - lastDelivered;
+    countEl.classList.remove('just-changed');
+    void countEl.offsetWidth;                        // restart the animation
+    countEl.classList.add('just-changed');
+    const note = document.getElementById('new-note');
+    note.textContent = `${added} new video${added === 1 ? '' : 's'} just landed`;
+    note.style.display = '';
+    clearTimeout(window.__noteTimer);
+    window.__noteTimer = setTimeout(() => { note.style.display = 'none'; }, 12000);
+  }
+  lastDelivered = data.delivered;
+  document.getElementById('dot2').style.background = '#2ea86a';
+  document.getElementById('hdr-updated').textContent =
+    'Updated ' + new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+  document.getElementById('dot').style.background = '#2ea86a';
+  document.getElementById('live-txt').textContent = 'Live, updated ' + new Date().toLocaleTimeString();
+
+  // group into sections, in the order the tracker set
+  const shown = folded.filter(matchesSearch);
+  const search = document.getElementById('vsearch');
+  search.style.display = folded.length > 4 ? 'flex' : 'none';
+  document.getElementById('vq-hits').textContent =
+    searchQ ? `${shown.length} of ${folded.length}` : '';
+
+  const groups = [];
+  const byName = new Map();
+  shown.forEach(s => {
+    const key = s.section || '';
+    if (!byName.has(key)){ const g = { name: key, rows: [] }; byName.set(key, g); groups.push(g); }
+    byName.get(key).rows.push(s);
+  });
+  const wanted = ev.sectionOrder || [];
+  if (wanted.length){
+    groups.sort((a, b) => {
+      const ia = a.name ? wanted.indexOf(a.name) : 1e6, ib = b.name ? wanted.indexOf(b.name) : 1e6;
+      return (ia === -1 ? 1e5 : ia) - (ib === -1 ? 1e5 : ib);
+    });
+  }
+
+  // A background poll rebuilds every row. Anything the client was part-way
+  // through typing lives in those rows, so carry it across the rebuild —
+  // losing two sentences to a refresh they didn't ask for is unforgivable.
+  const openNotes = {};
+  document.querySelectorAll('.addnote form').forEach(f => {
+    if (f.style.display === 'none') return;
+    const box = f.querySelector('textarea');
+    openNotes[f.id.replace(/^nf-/, '')] = { text: box ? box.value : '', focus: document.activeElement === box };
+  });
+
+  document.getElementById('sections').innerHTML = groups.length
+    ? groups.map((g, i) => sectionHtml(g, groups.length, i)).join('')
+    : searchQ
+      ? `<p class="vsearch-none">No sessions match &ldquo;${esc(searchQ)}&rdquo;.</p>`
+      : '<div class="vt-section"><p class="muted">Nothing posted yet. Check back soon.</p></div>';
+
+  Object.keys(openNotes).forEach(id => {
+    const f = document.getElementById('nf-' + id);
+    const box = document.getElementById('nt-' + id);
+    if (!f || !box) return;
+    f.style.display = 'block';
+    if (f.previousElementSibling) f.previousElementSibling.style.display = 'none';
+    box.value = openNotes[id].text;
+    if (openNotes[id].focus){
+      const at = box.value.length;
+      box.focus(); try { box.setSelectionRange(at, at); } catch (e){}
+    }
+  });
+
+  if (!firstLoaded){
+    const first = folded.find(r => r.vimeoId);
+    if (first){ firstLoaded = true; loadPlayer(first, false); }
+  } else if (nowPlayingId && playIndex.has(nowPlayingId)){
+    paintPlayerActions(playIndex.get(nowPlayingId));   // links can arrive later
+  }
+
+  const jump = document.getElementById('hdr-jump');
+  const named = groups.filter(g => g.name);
+  jump.style.display = named.length > 1 ? '' : 'none';
+  jump.innerHTML = '<option value="">Jump to&hellip;</option>' +
+    named.map((g, i) => `<option value="sec-${i}">${esc(g.name)}</option>`).join('');
+
+  const details = ev.details || [];
+  document.getElementById('details-block').style.display = details.length ? 'block' : 'none';
+  document.getElementById('ev-details').innerHTML =
+    details.map(d => `<li><strong>${esc(d.label)}:</strong> ${esc(d.value)}</li>`).join('');
+
+  if (ev.isEvent === false){
+    document.getElementById('cta-h').textContent = 'Ready for your next project?';
+    document.getElementById('cta-p').textContent =
+      'We\u2019d love to keep the momentum going \u2014 send over the next brief and we\u2019ll pick up right where we left off.';
+    document.getElementById('cta-a').textContent = 'Start Your Next Project';
+  }
+
+  const upBlock = document.getElementById('upload-block');
+  upBlock.style.display = ev.uploads ? 'block' : 'none';
+  if (ev.uploads){
+    UPLOAD_MAX_MB = ev.uploadMaxMb || 25;
+    document.getElementById('up-cap').textContent =
+      `Up to ${UPLOAD_MAX_MB}MB per file. For anything larger, email rob@r3mediapro.com.`;
+    if (!uploadsListed){ uploadsListed = true; loadUploads(); }
+  } else {
+    document.getElementById('up-sent').style.display = 'none';
+  }
+
+  if (DEBUG) stampThumbDebug();
+}
+
+/* ---------------- client uploads ---------------- */
+
+let UPLOAD_MAX_MB = 25;
+let searchQ = '';
+let uploadsListed = false;
+let lastData = null;
+let uploadsWired = false;
+let nowPlayingId = null;   // so a refresh repaints the player's buttons in place
+
+function onSearch(){
+  searchQ = document.getElementById('vq').value.trim().toLowerCase();
+  document.getElementById('vq-clear').style.display = searchQ ? '' : 'none';
+  if (lastData) render(lastData);
+}
+
+function clearSearch(){
+  document.getElementById('vq').value = '';
+  onSearch();
+  document.getElementById('vq').focus();
+}
+
+/** Match on the things a client would actually type: a title, a room, a day. */
+function matchesSearch(s){
+  if (!searchQ) return true;
+  // Both forms of the room: roomLabel turns GRAND2 into "Grand 2", and either
+  // is a reasonable thing to type.
+  const hay = [s.title, s.section, s.room, roomLabel(s.room, s.roomName), s.day, timeHuman(s.time),
+               ...(s.older || []).map(o => o.title)].filter(Boolean).join(' ').toLowerCase();
+  return hay.includes(searchQ);
+}
+
+/**
+ * Everything the client has sent for this event, read from the folder each
+ * time rather than remembered in the page — so it survives a refresh and
+ * shows uploads made from their phone as well as their desk.
+ */
+async function loadUploads(){
+  const box = document.getElementById('up-sent');
+  if (!box) return;
+  try {
+    const r = await fetch(API, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ mode:'uploads', event: EVENT, pw: password }) });
+    const out = await r.json();
+    if (!out.ok || !(out.files || []).length){
+      box.style.display = 'none';
+      document.getElementById('up-sent-list').innerHTML = '';   // never leave a removed file listed
+      return;
+    }
+
+    box.style.display = 'block';
+    document.getElementById('up-sent-n').textContent =
+      `${out.files.length} file${out.files.length === 1 ? '' : 's'} you've sent`;
+    document.getElementById('up-sent-list').innerHTML = out.files.map(f => `
+      <li data-id="${esc(f.id)}">
+        <span class="nm" title="${esc(f.name)}">${esc(f.name)}</span>
+        <span class="up-when">${esc(niceWhen(f.at))}</span>
+        <span class="st">${esc(size(f.size))}</span>
+        <button type="button" class="up-rm" onclick="removeUpload('${jsq(f.id)}', this)">Remove</button>
+      </li>`).join('');
+  } catch (e){ /* offline — leave whatever's on screen */ }
+}
+
+function niceWhen(iso){
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  const days = Math.floor((Date.now() - d.getTime()) / 86400000);
+  if (days === 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 7) return days + ' days ago';
+  return d.toLocaleDateString([], { day:'numeric', month:'short' });
+}
+
+/** Removal trashes the file — recoverable from Drive for 30 days, so a
+    mis-click costs nothing and nobody can destroy anything outright. */
+async function removeUpload(id, btn){
+  const li = btn.closest('li');
+  const name = li.querySelector('.nm').textContent.trim();
+  if (!confirm(`Remove “${name}”?\n\nIt stops being part of what you've sent us. We can still recover it if this was a mistake.`)) return;
+  btn.disabled = true; btn.textContent = 'Removing…';
+  try {
+    const r = await fetch(API, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ mode:'uploadRemove', event: EVENT, pw: password, id }) });
+    const out = await r.json();
+    if (!out.ok) throw new Error(out.error || 'could not remove it');
+    loadUploads();
+  } catch (e){
+    btn.disabled = false; btn.textContent = 'Remove';
+    alert(e.message);
+  }
+}
+
+function wireUploads(){
+  if (uploadsWired) return;
+  uploadsWired = true;
+  const box = document.getElementById('dropbox');
+  const input = document.getElementById('up-input');
+  if (!box || !input) return;
+
+  box.addEventListener('click', e => { if (e.target.id !== 'up-browse') input.click(); });
+  document.getElementById('up-browse').addEventListener('click', e => { e.stopPropagation(); input.click(); });
+  input.addEventListener('change', () => { sendFiles([...input.files]); input.value = ''; });
+
+  ['dragenter','dragover'].forEach(ev => box.addEventListener(ev, e => {
+    e.preventDefault(); box.classList.add('over');
+  }));
+  ['dragleave','drop'].forEach(ev => box.addEventListener(ev, e => {
+    e.preventDefault(); box.classList.remove('over');
+  }));
+  box.addEventListener('drop', e => sendFiles([...(e.dataTransfer.files || [])]));
+}
+
+function fileRow(name){
+  const li = document.createElement('li');
+  li.innerHTML = `<span class="nm"></span><span class="st">waiting…</span>`;
+  li.querySelector('.nm').textContent = name;
+  document.getElementById('up-list').appendChild(li);
+  return li.querySelector('.st');
+}
+
+function readBase64(file){
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onerror = () => reject(new Error('could not read that file'));
+    // strips the "data:...;base64," prefix the reader adds
+    fr.onload = () => resolve(String(fr.result).split(',')[1] || '');
+    fr.readAsDataURL(file);
+  });
+}
+
+async function sendFiles(files){
+  for (const f of files){
+    const st = fileRow(f.name);
+    if (f.size > UPLOAD_MAX_MB * 1024 * 1024){
+      st.textContent = `too big (${size(f.size)})`; st.className = 'st bad'; continue;
+    }
+    st.textContent = 'sending…';
+    try {
+      const data = await readBase64(f);
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // keeps it a simple request, no preflight
+        body: JSON.stringify({ mode: 'upload', event: EVENT, pw: password,
+                               name: f.name, mime: f.type || 'application/octet-stream', data })
+      });
+      const out = await res.json();
+      if (!out.ok) throw new Error(out.error || 'upload failed');
+      st.textContent = `sent · ${size(f.size)}`; st.className = 'st ok';
+    } catch (e){
+      st.textContent = e.message; st.className = 'st bad';
+    }
+  }
+  loadUploads();          // fold the new arrivals into the persistent list
+}
+
+/**
+ * ?debug=1 — label each thumbnail with what the browser actually did with
+ * it. Screenshot-able from any device, which beats describing a rendering
+ * bug in words.
+ */
+function stampThumbDebug(tries){
+  tries = tries || 0;
+  setTimeout(() => {
+    const first = document.querySelector('.thumb');
+    // nothing laid out yet (still behind the password gate, or images pending)
+    if ((!first || !first.getBoundingClientRect().width) && tries < 12)
+      return stampThumbDebug(tries + 1);
+    document.querySelectorAll('.thumb').forEach(t => {
+      if (t.querySelector('.dbg')) return;
+      const img = t.querySelector('img');
+      const b = t.getBoundingClientRect();
+      const tag = document.createElement('div');
+      tag.className = 'dbg';
+      tag.style.cssText = 'position:absolute;inset:auto 0 0 0;background:rgba(0,0,0,.82);' +
+        'color:#7fd6a8;font:600 9px/1.35 ui-monospace,monospace;padding:2px 3px;z-index:5;' +
+        'text-align:left;white-space:pre-wrap;pointer-events:none';
+      const write = () => {
+        const r = t.getBoundingClientRect();
+        const box = Math.round(r.width) + '\u00d7' + Math.round(r.height);
+        const nat = img ? (img.naturalWidth + '\u00d7' + img.naturalHeight) : 'no img';
+        const fit = img ? getComputedStyle(img).objectFit : '-';
+        tag.textContent = `box ${box} r${(r.width / r.height).toFixed(2)}\nsrc ${nat} ${fit}`;
+      };
+      write();
+      if (img && !img.complete){ img.addEventListener('load', write); img.addEventListener('error', write); }
+      // below-the-fold rows only decode once they're scrolled to
+      addEventListener('scroll', write, { passive: true });
+      addEventListener('resize', write);
+      t.appendChild(tag);
+    });
+    const prev = document.getElementById('dbg-foot');
+    if (prev) prev.remove();
+    const w = document.createElement('div');
+    w.id = 'dbg-foot';
+    w.style.cssText = 'position:fixed;left:0;bottom:0;z-index:99;background:#000;color:#7fd6a8;' +
+      'font:600 11px ui-monospace,monospace;padding:5px 8px';
+    w.textContent = `viewport ${innerWidth}\u00d7${innerHeight} dpr${devicePixelRatio} ` +
+      `ar:${CSS.supports('aspect-ratio','16/9') ? 'yes' : 'NO'} ` +
+      `fit:${CSS.supports('object-fit','contain') ? 'yes' : 'NO'}`;
+    document.body.appendChild(w);
+  }, tries ? 400 : 900);
+}
+
+function sectionHtml(g, groupCount, idx){
+  const heading = g.name ? `<h3>${esc(g.name)}</h3>`
+                         : (groupCount > 1 ? '<h3>Other</h3>' : '');
+  return `<div class="vt-section" id="sec-${idx}">
+    ${heading}
+    <div class="vt-wrap"><table class="vt">${g.rows.map(rowHtml).join('')}</table></div>
+  </div>`;
+}
+
+/**
+ * Two cuts of one session are one line item, not two.
+ *
+ * A re-cut is uploaded to Vimeo as its own video and kept as its own row, so
+ * the client page would otherwise list "Opening Keynote" twice with no clue
+ * which to download. Room plus title identifies the session; version says
+ * which cut. The newest becomes the row, the rest hang off it — still one
+ * click away, because a client asking for the previous cut is routine.
+ */
+function versionKey(s){
+  const t = String(s.title || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+  return t ? (s.room || '') + '|' + t : '';
+}
+
+function foldVersions(rows){
+  const out = [], primary = new Map();
+  const bare = x => { const c = Object.assign({}, x); delete c.older; return c; };
+
+  rows.forEach(s => {
+    const key = versionKey(s);
+    if (!key){ out.push(s); return; }
+    const cur = primary.get(key);
+    if (!cur){
+      const n = Object.assign({}, s, { older: [] });
+      primary.set(key, n); out.push(n); return;
+    }
+    const cv = cur.version || 1, sv = s.version || 1;
+    // Same title AND same version is a genuine duplicate, not a version pair —
+    // leave both visible rather than quietly hiding one.
+    if (sv === cv){ out.push(s); return; }
+    if (sv > cv){
+      const at = out.indexOf(cur);
+      const merged = Object.assign({}, s, { older: cur.older.concat([bare(cur)]) });
+      out[at] = merged; primary.set(key, merged);
+    } else {
+      cur.older.push(bare(s));
+    }
+  });
+
+  out.forEach(r => { if (r.older) r.older.sort((a, b) => (b.version || 1) - (a.version || 1)); });
+  return out;
+}
+
+function olderHtml(s){
+  const list = (s.older || []).filter(o => o.vimeoId);
+  if (!list.length) return '';
+  const chips = list.map(o => {
+    const v = o.version || 1;
+    const watch = `<a class="vchip" href="#" title="Play version ${v}"
+        onclick="playVideo('${jsq(o.id)}'); return false;">&#9654; v${v}</a>`;
+    const dl = o.download
+      ? `<a class="vchip" href="${esc(safeUrl(o.download))}" target="_blank" rel="noopener"
+           title="Download version ${v}">&#11015;</a>`
+      : '';
+    // review is only present when the toggle was on for that cut, so an old
+    // version keeps its notes page exactly as long as it had one
+    const rev = o.review
+      ? `<a class="vchip" href="${esc(safeUrl(o.review))}" target="_blank" rel="noopener" data-pause
+           title="Leave timestamped notes on version ${v}">&#9998;</a>`
+      : '';
+    // One line per cut: reading down the list is reading back through the
+    // versions, and a cut's own actions stay grouped with it.
+    return `<div class="ocut">${watch}${dl}${rev}</div>`;
+  }).join('');
+  return `<div class="older"><span class="olabel">Also available</span>${chips}</div>`;
+}
+
+/**
+ * Every action for one video, in a fixed order so the eye learns where each
+ * one lives. In a row the missing ones leave an empty slot, so buttons line
+ * up down the column; under the player there's only one video, nothing to
+ * line up with, and it's already playing — so the gaps and Watch both go.
+ */
+function actionsHtml(s, where){
+  const underPlayer = where === 'player';
+  const ready = !!s.vimeo;
+  const gap = underPlayer ? '' : '<span class="empty-slot"></span>';
+  const slots = [
+    ready && !underPlayer
+      ? `<a class="btn sm" href="#" onclick="playVideo('${jsq(s.id)}'); return false;">&#9654; Watch</a>`
+      : gap,
+    s.download
+      ? `<a class="btn sm ghost" href="${esc(safeUrl(s.download))}" target="_blank" rel="noopener">&#11015; Download${
+           s.downloadSize ? ' <span style="opacity:.6;font-size:.86em">' + size(s.downloadSize) + '</span>' : ''}</a>`
+      : ready
+        ? `<span class="btn sm ghost prepping" title="Vimeo is still preparing the download file. Streaming works now; this appears on its own when it's ready.">&#8987; Preparing&hellip;</span>`
+        : gap,
+    s.review
+      ? `<a class="btn sm ghost" href="${esc(safeUrl(s.review))}" target="_blank" rel="noopener" data-pause
+            title="Leave timestamped notes on Vimeo">&#9998; Review</a>`
+      : gap,
+    ready
+      ? `<a class="btn sm ghost" href="${esc(safeUrl(s.vimeo))}" target="_blank" rel="noopener" data-pause>View on Vimeo</a>`
+      : gap,
+    s.drive ? `<a class="btn sm ghost" href="${esc(safeUrl(s.drive))}" target="_blank" rel="noopener">Drive</a>` : gap
+  ];
+  return `<div class="actions${underPlayer ? ' under-player' : ''}">${slots.join('')}</div>`;
+}
+
+function rowHtml(s){
+  const colour = COLOURS[s.status] || '#6b6b74';
+  // Keyed on vimeoId, not the page URL: playVideo() resolves through
+  // playIndex, which only holds rows that have one — otherwise Watch and the
+  // play overlay appear and silently do nothing.
+  const ready  = !!s.vimeoId;
+
+  const thumb = ready && s.thumb
+    ? `<div class="thumb" onclick="playVideo('${jsq(s.id)}')">
+         <img src="${esc(s.thumb)}" alt="" loading="lazy"
+              onerror="this.parentNode.classList.add('empty'); this.remove();">
+         <div class="play">&#9654;</div>
+       </div>`
+    : `<div class="thumb empty">&#127916;</div>`;
+
+  const older = olderHtml(s);
+  const facts = [
+    dur(s.duration),
+    [roomLabel(s.room, s.roomName), s.day, timeHuman(s.time)].filter(Boolean).join(' &middot; ')
+  ].filter(Boolean).join(' &middot; ');
+
+  const badge = `<span class="badge status" style="color:${colour};border:1px solid ${colour}66;` +
+                `background:${colour}1f;">${esc(s.label || s.status)}</span>`;
+  // Only worth saying once there's more than one cut — a lone V1 is just
+  // "the video", and labelling it invites a question about where V2 is.
+  const vbadge = (s.version || 1) > 1
+    ? `<span class="badge vbadge" title="This is version ${s.version} of this session">v${s.version}</span>`
+    : '';
+
+  const buttons = actionsHtml(s);
+
+  return `<tr>
+    <td>
+      <div class="vrow">
+        ${thumb}
+        <div class="vmeta">
+          <div class="t">${esc(s.title || 'Untitled session')}</div>
+          <div class="d">${badge}${vbadge}${facts ? '<span class="facts">' + facts + '</span>' : ''}</div>
+          ${s.target ? `<div class="expected">${isPastDate(s.target)
+              ? 'Expected Soon' : 'Expected ' + esc(niceDate(s.target))}</div>` : ''}
+          ${s.note ? `<div class="note">${esc(s.note)}</div>` : ''}
+          ${older}
+          <div class="addnote">
+            <a href="#" onclick="openNote('${jsq(s.id)}'); return false;">&#43; Add a note</a>
+            <form id="nf-${esc(s.id)}" style="display:none" onsubmit="event.preventDefault(); sendNote('${jsq(s.id)}');">
+              <textarea id="nt-${esc(s.id)}" rows="2" placeholder="Anything you'd like changed on this one?"></textarea>
+              <div class="row">
+                <button type="submit" class="btn sm">Send</button>
+                <button type="button" class="btn sm ghost" onclick="closeNote('${jsq(s.id)}')">Cancel</button>
+                <span id="ns-${esc(s.id)}" class="stat"></span>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </td>
+    <td class="btns">${buttons}</td>
+  </tr>`;
+}
+
+/* The two logo lockups and the footer name.
+   The brands are not the same shape: R3's mark and wordmark are separate
+   pieces stacked together, while evp-wordmark.png is already a full lockup.
+   Emitting the R3 arrangement for both drew the EVP mark twice at double
+   width and pushed it over the heading. */
+function paintBrand(){
+  const b = window.BRAND;
+  const lock = b.key === 'evp'
+    ? `<img class="evp-lock" src="${b.wordmark}" alt="${b.name}">`
+    : `<img src="${b.mark}" alt="${b.name}"><img class="mp mp-text" src="${b.wordmark}" alt="${b.name}">`;
+  const head = document.getElementById('brand-lockup');
+  const gate = document.getElementById('gate-lockup');
+  if (head) head.innerHTML = lock;
+  if (gate) gate.innerHTML = lock;
+  const foot = document.getElementById('foot-brand');
+  if (foot) foot.textContent = b.name;
+}
+
+(async function start(){
+  paintBrand();
+  const bs = document.getElementById('buildstamp');
+  if (bs && bs.textContent.indexOf('__') === 0) bs.textContent = '';
+
+  // The code is the one thing the link already tells us — showing it stops
+  // people typing it into the password box and bouncing off.
+  if (EVENT){
+    document.getElementById('gate-code-v').textContent = EVENT;
+    document.getElementById('gate-code').style.display = 'inline-flex';
+  }
+  if (!EVENT){
+    document.getElementById('err').textContent = 'This link is missing its event code. Use the link from your delivery email.';
+    document.getElementById('err').style.display = 'block';
+    return;
+  }
+  if (password){
+    try { const data = await fetchBoard(); if (data.ok) return showBoard(data); } catch (e){}
+    sessionStorage.removeItem('r3-pw-' + EVENT);
+  }
+  document.getElementById('pw').focus();
+})();
+</script>
+
+</body>
+</html>

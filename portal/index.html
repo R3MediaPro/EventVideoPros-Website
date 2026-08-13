@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client Portal</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="../css/styles.css">
+  <script>
+  /* Same file on both domains, skinned by the one it is served from. See
+     event.html: the brand is a property of the address, not of the data. */
+  (function(){
+    var q = new URLSearchParams(location.search).get('brand');
+    var evp = q ? q === 'evp' : /eventvideopros/i.test(location.hostname);
+    window.BRAND = evp
+      ? { key:'evp', name:'Event Video Pros', site:'eventvideopros.com',
+          wordmark:'../assets/evp-wordmark.png', icon:'../assets/favicon.png' }
+      : { key:'r3',  name:'R3 Media Production', site:'r3mediapro.com',
+          wordmark:'../assets/mp-text.png', mark:'../assets/r3-mark.png',
+          icon:'../assets/favicon.png' };
+    document.documentElement.className = 'brand-' + window.BRAND.key;
+    document.title = 'Client Portal | ' + window.BRAND.name;
+    document.write('<link rel="icon" type="image/png" href="' + window.BRAND.icon + '">');
+  })();
+  </script>
+  <style>
+    html.brand-evp{ --muted:#6C757D; --text:#2E2E2E; --err:#B3261E; }
+    html.brand-r3{ --err:#e63946; }
+    html.brand-evp .site-header .brand img.evp-lock{ height:26px; width:auto; max-width:none; }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap nav">
+    <a class="brand" href="../index.html" id="brand-lockup"></a>
+    <nav class="links" style="display:flex;">
+      <a href="../index.html" id="back-link">&larr; Back</a>
+    </nav>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="wrap">
+    <h1>Client Portal</h1>
+    <p>Your event's private page holds streaming videos, downloads, and project details. Enter the access code from your delivery email.</p>
+  </div>
+</section>
+
+<section class="block" style="padding-top:60px;">
+  <div class="wrap" style="max-width:460px;">
+    <form class="quote" style="grid-template-columns:1fr;" onsubmit="event.preventDefault(); go();">
+      <div>
+        <label for="code">Access Code</label>
+        <input type="text" id="code" autocomplete="off" autocapitalize="off" placeholder="from your delivery email" required>
+      </div>
+      <div>
+        <button type="submit" class="btn" style="border:0; cursor:pointer; font-size:1rem; width:100%;">Open My Page</button>
+      </div>
+      <p id="err" style="display:none; color:var(--err); margin:0; text-align:center; font-size:0.9rem;">We couldn't find that access code. Double-check your delivery email, or contact <a href="mailto:rob@r3mediapro.com">rob@r3mediapro.com</a>.</p>
+    </form>
+    <p style="color:var(--muted); font-size:0.85rem; text-align:center; margin-top:20px;">Don't have a code? Your videos may still be in production. Email <a href="mailto:rob@r3mediapro.com">rob@r3mediapro.com</a> and we'll sort you out.</p>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-bottom" style="margin-top:0; padding-top:0; border-top:0;">
+      <span>&copy; 2026 <span id="foot-brand">R3 Media Production</span></span>
+      <span><a href="../index.html" id="foot-site">r3mediapro.com</a></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Live events are served by event.html?event=<code>; older one-off pages are
+// still plain <code>.html files, so try the live list first and fall back.
+const API = 'https://script.google.com/macros/s/AKfycbxcQZAx8leuJsUp4f-qkTcsfenXeLrZean7xxJKQjGaNiNuBcOt0vz1QPyemnrNAaL9/exec';
+
+(function paintBrand(){
+  const b = window.BRAND;
+  document.getElementById('brand-lockup').innerHTML = b.key === 'evp'
+    ? `<img class="evp-lock" src="${b.wordmark}" alt="${b.name}">`
+    : `<img src="${b.mark}" alt="${b.name}"><img class="mp-text" src="${b.wordmark}" alt="${b.name}">`;
+  document.getElementById('back-link').innerHTML = '&larr; Back to ' + b.site;
+  document.getElementById('foot-brand').textContent = b.name;
+  const fs = document.getElementById('foot-site');
+  fs.textContent = b.site;
+})();
+
+async function go() {
+  const code = document.getElementById('code').value.trim().toLowerCase();
+  if (!code) return;
+  const btn = document.querySelector('button[type=submit]');
+  const err = document.getElementById('err');
+  err.style.display = 'none';
+  const label = btn.textContent;
+  btn.textContent = 'Checking…';
+  btn.disabled = true;
+
+  try {
+    try {
+      const res = await fetch(API + '?mode=portal&event=' + encodeURIComponent(code), {redirect: 'follow'});
+      const data = await res.json();
+      // a password prompt is still proof the event exists
+      if (data.ok === true || data.error === 'bad password'){
+        window.location.href = 'event.html?event=' + encodeURIComponent(code);
+        return;
+      }
+    } catch (e) { /* offline or the script is down, so try the old pages */ }
+
+    const legacy = code + '.html';
+    const res2 = await fetch(legacy, {method: 'HEAD'});
+    if (!res2.ok) throw new Error();
+    window.location.href = legacy;
+  } catch (e) {
+    err.style.display = 'block';
+  } finally {
+    btn.textContent = label;
+    btn.disabled = false;
+  }
+}
+</script>
+
+</body>
+</html>
