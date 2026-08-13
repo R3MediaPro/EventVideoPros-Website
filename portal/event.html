@@ -16,7 +16,8 @@
     var evp = q ? q === 'evp' : /eventvideopros/i.test(location.hostname);
     window.BRAND = evp
       ? { key:'evp', name:'Event Video Pros', mark:'../assets/evp-mark.png',
-          wordmark:'../assets/evp-wordmark.png', icon:'../assets/favicon.png' }
+          wordmark:'../assets/evp-wordmark.png', logo:'../assets/evp-logo.png',
+          icon:'../assets/favicon.png' }
       : { key:'r3',  name:'R3 Media Production', mark:'../assets/r3-mark.png',
           wordmark:'../assets/mp-text.png', icon:'../assets/favicon-r3.png' };
     document.documentElement.className = 'brand-' + window.BRAND.key;
@@ -66,10 +67,12 @@
     html.brand-evp .prog-bar{ background:#E3E6EA; }
     /* One-piece lockup, so it is sized directly rather than as mark + wordmark */
     html.brand-evp .site-header .brand img.evp-lock{ height:26px; width:auto; max-width:none; }
-    html.brand-evp .gate-logo img.evp-lock{ height:40px; width:auto; }
+    /* The source is a 900x900 square with generous internal padding, so the
+       artwork reads a good deal smaller than the box it sits in. */
+    html.brand-evp .gate-logo img.evp-full{ height:156px; width:auto; }
     @media (max-width:620px){
       html.brand-evp .site-header .brand img.evp-lock{ height:21px; }
-      html.brand-evp .gate-logo img.evp-lock{ height:32px; }
+      html.brand-evp .gate-logo img.evp-full{ height:118px; }
     }
 
     .badge{
@@ -456,7 +459,7 @@
 
       <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-top:30px;">
         <span class="live"><i id="dot"></i> <span id="live-txt">Live</span></span>
-        <span class="muted" id="buildstamp" style="font-size:.72rem;opacity:.55" title="Which build of this page you're looking at">build Aug 12, 8:54 PM MT</span>
+        <span class="muted" id="buildstamp" style="font-size:.72rem;opacity:.55" title="Which build of this page you're looking at">build Aug 12, 9:09 PM MT</span>
         <span id="ev-sum" class="muted" style="font-size:.85rem;"></span>
         <span id="new-note" class="new-note" style="display:none"></span>
       </div>
@@ -1440,13 +1443,18 @@ function rowHtml(s){
    width and pushed it over the heading. */
 function paintBrand(){
   const b = window.BRAND;
+  // The header is a shallow strip, so EVP uses its wordmark there; the gate is
+  // centred with room to breathe, so it gets the full stacked logo.
   const lock = b.key === 'evp'
     ? `<img class="evp-lock" src="${b.wordmark}" alt="${b.name}">`
     : `<img src="${b.mark}" alt="${b.name}"><img class="mp mp-text" src="${b.wordmark}" alt="${b.name}">`;
+  const gateLock = b.key === 'evp'
+    ? `<img class="evp-full" src="${b.logo}" alt="${b.name}">`
+    : lock;
   const head = document.getElementById('brand-lockup');
   const gate = document.getElementById('gate-lockup');
   if (head) head.innerHTML = lock;
-  if (gate) gate.innerHTML = lock;
+  if (gate) gate.innerHTML = gateLock;
   const foot = document.getElementById('foot-brand');
   if (foot) foot.textContent = b.name;
 }
