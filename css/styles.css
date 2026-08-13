@@ -251,3 +251,18 @@ footer ul a:hover { color: var(--slate); }
   color: var(--steel); font-size: 0.82rem; display: flex; justify-content: space-between;
   flex-wrap: wrap; gap: 10px;
 }
+
+/* ---------- Travel map ("Where We Worked") ---------- */
+.travel-map { width: 100%; height: auto; display: block; margin: 6px auto 0; }
+.travel-map .land { fill: #F2F4F8; stroke: #DDE2EA; stroke-width: 1.2; stroke-linejoin: round; }
+.travel-map .arcs path { fill: none; stroke: var(--slate); stroke-width: 1.4; opacity: 0.38; stroke-linecap: round; }
+.travel-map .dots circle { fill: var(--slate); opacity: 0.92; transition: opacity 0.15s; }
+.travel-map .dots circle:hover { opacity: 1; }
+.travel-map .home { fill: var(--gold); }
+.travel-map .home-halo { fill: var(--gold); opacity: 0.2; }
+.travel-map .home-label { font: 800 12px "Inter", sans-serif; fill: #A8842C; letter-spacing: 0.12em; }
+.travel-map .labels text { font: 600 12.5px "Inter", sans-serif; fill: var(--charcoal); }
+@media (max-width: 640px) {
+  .travel-map .labels text { font-size: 17px; }
+  .travel-map .home-label { font-size: 16px; }
+}
