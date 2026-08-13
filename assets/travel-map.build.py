@@ -87,13 +87,26 @@ for name,st,lat,lon,trips in sorted(CITIES,key=lambda c:-c[4]):
 
 svg=f'''<svg viewBox="0 0 {W:.0f} {H:.0f}" xmlns="http://www.w3.org/2000/svg" class="travel-map" role="img"
      aria-label="Map of the United States showing the 14 metro areas Event Video Pros travelled to for events in 2025, with routes radiating from Denver, Colorado.">
-  <path class="land" d="{outline}"/>
-  <g class="arcs">{arcs}</g>
-  <g class="dots">{dots}</g>
-  <circle class="home-halo" cx="{hx:.1f}" cy="{hy:.1f}" r="16"/>
-  <circle class="home" cx="{hx:.1f}" cy="{hy:.1f}" r="7"/>
-  <text class="home-label" x="{hx:.1f}" y="{hy-24:.1f}" text-anchor="middle">DENVER</text>
-  <g class="labels">{labels}</g>
+  <style>
+    .travel-map .land{{fill:#F2F4F8;stroke:#DDE2EA;stroke-width:1.2;stroke-linejoin:round}}
+    .travel-map .arcs path{{fill:none;stroke:#4C5A99;stroke-width:1.4;opacity:.38;stroke-linecap:round}}
+    .travel-map .dots circle{{fill:#4C5A99;opacity:.92}}
+    .travel-map .home{{fill:#C19A36}}
+    .travel-map .home-halo{{fill:#C19A36;opacity:.2}}
+    .travel-map .home-label{{font:800 12px Inter,system-ui,sans-serif;fill:#A8842C;letter-spacing:.12em}}
+    .travel-map .labels text{{font:600 12.5px Inter,system-ui,sans-serif;fill:#2E2E2E}}
+    @media (max-width:640px){{
+      .travel-map .labels text{{font-size:17px}}
+      .travel-map .home-label{{font-size:16px}}
+    }}
+  </style>
+  <path class="land" d="{outline}" fill="#F2F4F8" stroke="#DDE2EA" stroke-width="1.2"/>
+  <g class="arcs" fill="none" stroke="#4C5A99" stroke-width="1.4" opacity="0.38" stroke-linecap="round">{arcs}</g>
+  <g class="dots" fill="#4C5A99" opacity="0.92">{dots}</g>
+  <circle class="home-halo" cx="{hx:.1f}" cy="{hy:.1f}" r="16" fill="#C19A36" opacity="0.2"/>
+  <circle class="home" cx="{hx:.1f}" cy="{hy:.1f}" r="7" fill="#C19A36"/>
+  <text class="home-label" x="{hx:.1f}" y="{hy-24:.1f}" text-anchor="middle" fill="#A8842C" font-family="Inter,system-ui,sans-serif" font-size="12" font-weight="800" letter-spacing="1.4">DENVER</text>
+  <g class="labels" fill="#2E2E2E" font-family="Inter,system-ui,sans-serif" font-size="12.5" font-weight="600">{labels}</g>
 </svg>'''
 open('map.svg','w').write(svg)
 print(f"wrote map.svg  viewBox 0 0 {W:.0f} {H:.0f}")
