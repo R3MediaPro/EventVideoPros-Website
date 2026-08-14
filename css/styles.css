@@ -183,6 +183,8 @@ ul.checks strong { color: var(--charcoal); }
 /* ---------- Stats ---------- */
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; text-align: center; }
 @media (max-width: 700px) { .stats { grid-template-columns: 1fr 1fr; } }
+.stats.six { grid-template-columns: repeat(3, 1fr); row-gap: 30px; }
+@media (max-width: 700px) { .stats.six { grid-template-columns: 1fr 1fr; } }
 .stat .num { font-size: 2.2rem; font-weight: 800; color: var(--slate); }
 .stat .label { color: var(--steel); font-size: 0.86rem; letter-spacing: 0.05em; text-transform: uppercase; }
 
