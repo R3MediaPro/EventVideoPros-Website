@@ -3,6 +3,9 @@
 Static site, no build step. This folder IS the git repo root; it deploys to
 GitHub Pages on every push to `main`.
 
+Lives at `~/Documents/*R3 Media Productions/07_Websites/EventVideoPros Website/`
+(moved under `07_Websites` Aug 15 2026, alongside the R3 site).
+
 ## Repo (created under the org — do not use a Downstage-Systems URL)
 
     https://github.com/R3MediaPro/EventVideoPros-Website
@@ -33,7 +36,7 @@ dark one.
   generic. Don't reintroduce it.
 - Logo lockup: `assets/evp-mark.png` + "Event Video Pros" text
 
-Source brand assets now live in `../../06_Brand Assets/` (EVP/, Clients/, R3/),
+Source brand assets now live in `../../../06_Brand Assets/` (EVP/, Clients/, R3/),
 outside the repo. Superseded strategy and style-guide PDFs are in
 `../Archive - superseded plans/` and should not be treated as current.
 
