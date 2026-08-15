@@ -33,8 +33,9 @@ dark one.
   generic. Don't reintroduce it.
 - Logo lockup: `assets/evp-mark.png` + "Event Video Pros" text
 
-Source brand assets (logos, client logos, style guide PDFs) are one folder up,
-outside the repo.
+Source brand assets now live in `../../06_Brand Assets/` (EVP/, Clients/, R3/),
+outside the repo. Superseded strategy and style-guide PDFs are in
+`../Archive - superseded plans/` and should not be treated as current.
 
 ## Positioning (matters for SEO)
 
